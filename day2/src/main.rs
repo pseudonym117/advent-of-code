@@ -3,8 +3,9 @@ use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::collections::HashMap;
+use std::time::Instant;
 
-fn funky_hash(check_string: &str) -> (u32, u32)    {
+fn letter_count(check_string: &str) -> HashMap<char, u32> {
     let mut letters : HashMap<char, u32> = HashMap::new();
 
     for letter in check_string.chars()  {
@@ -16,9 +17,13 @@ fn funky_hash(check_string: &str) -> (u32, u32)    {
         }
     }
 
+    return letters;
+}
+
+fn funky_hash(letters: &HashMap<char, u32>) -> (u32, u32)    {
     let mut duplicate = 0;
     let mut triplicate = 0;
-    for (_, instances) in &letters {
+    for (_, instances) in letters {
         match instances {
             2 => duplicate = 1,
             3 => triplicate = 1,
@@ -43,12 +48,45 @@ fn main() {
     f.read_to_string(&mut contents)
         .expect("something went wrong reading file");
     
-    let hashes = contents
+    let start = Instant::now();
+    
+    let ids : Vec<String> = contents
         .split('\n')
-        .map(|id| funky_hash(id))
+        .filter_map(|id| if id != "" {
+            Some(String::from(id))
+        } else {
+            None
+        })
+        .collect();
+
+    let hashes = ids
+        .iter()
+        .map(|id| funky_hash(&letter_count(id)))
         .fold((0, 0), |acc, check| (acc.0 + check.0, acc.1 + check.1));
     
     let checksum = hashes.0 * hashes.1;
 
-    println!("Checksum: {}", checksum);
+    println!("Total checksum: {}", checksum);
+
+    'search_loop: for x in 0..ids.len() {
+        for y in (x + 1)..ids.len() {
+            if ids[x].len() == ids[y].len()   {
+                let filtered_string : String = ids[x].chars()
+                    .zip(ids[y].chars())
+                    .filter_map(|cs| if cs.0 == cs.1 {
+                        Some(cs.0)
+                    } else {
+                        None
+                    })
+                    .collect();
+
+                if ids[x].len() - filtered_string.len() == 1    {
+                    println!("Common between IDs: {}", filtered_string);
+                    break 'search_loop;
+                }
+            }
+        }
+    }
+
+    println!("took {:?}", start.elapsed());
 }
