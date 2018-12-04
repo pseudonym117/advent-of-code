@@ -23,6 +23,29 @@ impl Rect {
             current: Point { x: self.location.x - 1, y: self.location.y },
         };
     }
+
+    fn left(&self) -> i32   {
+        return self.location.x;
+    }
+
+    fn right(&self) -> i32  {
+        return self.location.x + self.size.x;
+    }
+
+    fn top(&self) -> i32    {
+        return self.location.y;
+    }
+
+    fn bottom(&self) -> i32 {
+        return self.location.y + self.size.y;
+    }
+
+    fn overlap(&self, other: &Rect) -> bool {
+        return  (other.left() <= self.right()) &&
+                (self.left() <= (other.right())) && 
+                (other.top() <= self.bottom()) &&
+                (self.top() <= other.bottom()); 
+    }
 }
 
 struct RectIter {
@@ -74,7 +97,7 @@ fn main() {
     
     let start = Instant::now();
 
-    let cuts = contents
+    let cuts : Vec<ElfCut> = contents
         .split('\n')
         .filter_map(|line| if line == "" {
             None
@@ -101,9 +124,11 @@ fn main() {
                     },
                 }
             )
-        });
+        })
+        .collect();
 
     let all_cuts : Vec<Point> = cuts
+        .iter()
         .flat_map(|cut| cut.cut.iter())
         .collect();
     
@@ -131,6 +156,18 @@ fn main() {
         .sum();
 
     println!("There are {} inches which are being cut more than once", duplicates);
+
+    'outer: for x in 0..cuts.len()  {
+        'inner: for y in 0..cuts.len()    {
+            if x == y { continue 'inner; }
+            if cuts[x].cut.overlap(&cuts[y].cut) {
+                continue 'outer;
+            }
+        }
+
+        println!("cut with id {} does not overlap any other cuts", cuts[x].id);
+        break 'outer;
+    }
 
     println!("took {:?}", start.elapsed());
 }
