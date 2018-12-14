@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::time::Instant;
 
-fn react(polymer: String) -> String {
+fn react(polymer: &String) -> String {
     let mut output_chars : Vec<char> = polymer
         .chars()
         .filter(|c| !c.is_whitespace())
@@ -62,10 +62,30 @@ fn main() {
     
     let start = Instant::now();
 
-    let reduced = react(contents);
+    let reduced = react(&contents);
     
     println!("Final element:\n{}", reduced);
     println!("{} total elements", reduced.len());
     
+    let mut min_length = contents.len();
+    let mut min_removed = '5';
+
+    for c in "abcdefghijklmnopqrstuvwxyz".chars() {
+        let removed = &reduced
+            .chars()
+            .filter(|x| x.to_ascii_lowercase() != c)
+            .collect();
+        
+        let reacted = react(removed);
+        let reacted_len = reacted.len();
+
+        if reacted_len < min_length {
+            min_length = reacted_len;
+            min_removed = c;
+        }
+    }
+
+    println!("remove \"{}\" produced the shortest string. Shortest length: {}", min_removed, min_length);
+
     println!("took {:?}", start.elapsed());
 }
